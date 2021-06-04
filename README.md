@@ -44,3 +44,6 @@ ExamPle:
 ```shell
 python3 -u src/Visualizer.py -f out/Coord.csv -o out/out.svg -t chromosomal_No_1
 ```
+
+# CopyRight Note
+The Original implementation of the algorithm is from [kpj/ShRec3D](https://github.com/kpj/ShRec3D.git).
