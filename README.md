@@ -2,6 +2,9 @@
 
 Implementation of the algorithm described in [3D genome reconstruction from chromosomal contacts](http://www.nature.com/nmeth/journal/v11/n11/full/nmeth.3104.html).
 
+# Preview
+![](assets/preview.svg)
+> Data From `test/data/mat.csv`
 # Usage
 ## Requirements
 1. python3
@@ -23,7 +26,7 @@ optional arguments:
 
 ExamPle: 
 ```shell
-python3 -u src/Coordinates_Calculation.py -f data/mat.csv -o out/Coord.csv
+python3 -u src/Coordinates_Calculation.py -f test/data/mat.csv -o out/Coord.csv
 ```
 
 ## Visualizer
