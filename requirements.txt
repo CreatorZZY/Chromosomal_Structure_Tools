@@ -1,0 +1,5 @@
+numpy
+matplotlib
+mpl_toolkits
+networkx
+scipy
