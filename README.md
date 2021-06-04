@@ -43,7 +43,7 @@ optional arguments:
   -f F        Path to coordinates File(csv).
   -o O        Path to Output(SVG).
   -t T        Title of Image.
-  -s S        Smooth Factor. May be 0.1, 1.0, 2.0,
+  -s S        Smooth Factor(Default: 1.0). May be 0.1, 1.0, 2.0,
 ```
 
 ExamPle: 
