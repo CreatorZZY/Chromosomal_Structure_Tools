@@ -2,7 +2,7 @@
 Author: George Zhao
 Date: 2021-06-04 12:42:40
 LastEditors: George Zhao
-LastEditTime: 2021-06-05 13:08:43
+LastEditTime: 2021-06-05 13:31:13
 Description: 
 Email: 2018221138@email.szu.edu.cn
 Company: SZU
@@ -40,6 +40,9 @@ def visualize(coords, path_to_save: str, title: str, smooth_Factor: float, borde
                           c=(0, 0, 0, 1.0), linewidth=6, markersize=7, solid_capstyle='round', marker=marker)
     for i in range(N - 1):
         color = plt.cm.jet.reversed()(float(i) / float(N))
+        if border == True:
+            a_1 = ax.plot(x[i:i + 2], y[i:i + 2], z[i:i + 2],
+                          c=(0, 0, 0, 1.0), linewidth=6, markersize=7, solid_capstyle='round')
         a_2 = ax.plot(x[i:i + 2], y[i:i + 2], z[i:i + 2],
                       c=color, linewidth=5, solid_capstyle='round', marker=marker)
 
