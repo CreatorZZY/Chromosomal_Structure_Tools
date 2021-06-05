@@ -28,7 +28,7 @@ usage: FullSizeMatrix_Generator [-h] -f F -o O
 
 optional arguments:
   -h, --help  show this help message and exit
-  -f F        Path to Original Hi-C balanced Sparse Matrix File.
+  -f F        Path to Original Hi-C Normalized Sparse Matrix File.
   -o O        Path to Output of Full Size Matrix(CSV).
 ```
 
@@ -46,7 +46,7 @@ ExamPle:
 
 optional arguments:
   -h, --help  show this help message and exit
-  -f F        Path to Balenced Full Size Matrix(CSV).
+  -f F        Path to Normalized Full Size Matrix(CSV).
   -o O        Path to Output(CSV).
 ```
 
