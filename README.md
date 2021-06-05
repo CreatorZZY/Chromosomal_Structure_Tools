@@ -23,7 +23,7 @@ ExamPle:
 
 optional arguments:
   -h, --help  show this help message and exit
-  -f F        Path to Balenced Full Matrix(CSV).
+  -f F        Path to Balenced Full Size Matrix(CSV).
   -o O        Path to Output(CSV).
 ```
 
@@ -44,11 +44,15 @@ optional arguments:
   -o O        Path to Output(SVG).
   -t T        Title of Image.
   -s S        Smooth Factor(Default: 1.0). May be 0.1, 1.0, 2.0,
+  -b          Line With Black Border.
+  -m          Line End With Marker.
 ```
+
+> It is Better to use `-b` and `-m` simultaneously, or not to use simultaneously.
 
 ExamPle: 
 ```shell
-python3 -u src/Visualizer.py -f out/Coord.csv -o out/out.svg -t chromosomal_No_1
+python3 -u src/Visualizer.py -f out/Coord.csv -o out/out.svg -t chromosomal_No_1 -b -m
 ```
 
 # CopyRight Note
