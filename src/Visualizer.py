@@ -2,7 +2,7 @@
 Author: George Zhao
 Date: 2021-06-04 12:42:40
 LastEditors: George Zhao
-LastEditTime: 2021-06-05 11:42:53
+LastEditTime: 2021-06-05 13:08:43
 Description: 
 Email: 2018221138@email.szu.edu.cn
 Company: SZU
@@ -33,14 +33,16 @@ def visualize(coords, path_to_save: str, title: str, smooth_Factor: float, borde
     z = gaussian_filter1d(z, sigma=smooth_Factor)
 
     N = len(z)
+    if border == True:
+        for i in range(N - 1):
+            color = plt.cm.jet.reversed()(float(i) / float(N))
+            a_1 = ax.plot(x[i:i + 2], y[i:i + 2], z[i:i + 2],
+                          c=(0, 0, 0, 1.0), linewidth=6, markersize=7, solid_capstyle='round', marker=marker)
     for i in range(N - 1):
         color = plt.cm.jet.reversed()(float(i) / float(N))
-        # ax.scatter3D([x[i], ], [y[i], ], [z[i], ], c=[color, ], )
-        if border == True:
-            a_1 = ax.plot(x[i:i + 2], y[i:i + 2], z[i:i + 2],
-                          c=(0, 0, 0, 1.0), linewidth=6, markersize=7, solid_capstyle='round')
         a_2 = ax.plot(x[i:i + 2], y[i:i + 2], z[i:i + 2],
                       c=color, linewidth=5, solid_capstyle='round', marker=marker)
+
     ax.text(x[0], y[0], z[0], '5\'')
     ax.text(x[N - 1], y[N - 1], z[N - 1], '3\'')
     ax.grid(False)
