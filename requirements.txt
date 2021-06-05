@@ -3,3 +3,4 @@ matplotlib
 mpl_toolkits
 networkx
 scipy
+pandas

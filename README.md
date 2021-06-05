@@ -10,20 +10,37 @@ Implementation of the algorithm described in [3D genome reconstruction from chro
 > Data From `test/data/mat.csv`
 > 
 > With Difference Argument.
-> 1. -s 0.1 -m -b
-> 2. -s 0.1
-> 3. -s 1.0 -m -b
-> 4. -s 1.0
+> 1. `-s 0.1 -m -b`
+> 2. `-s 0.1`
+> 3. `-s 1.0 -m -b`
+> 4. `-s 1.0`
+
 # Usage
 ## Requirements
 1. python3
 2. python package in `requirements.txt`
 3. ffmpeg (Optional)
 
+## FullSizeMatrix_Generator
+Used to Generate `Full Size Matrix`.
+```
+usage: FullSizeMatrix_Generator [-h] -f F -o O
+
+optional arguments:
+  -h, --help  show this help message and exit
+  -f F        Path to Original Hi-C balanced Sparse Matrix File.
+  -o O        Path to Output of Full Size Matrix(CSV).
+```
+
+ExamPle: 
+```shell
+python3 -u src/FullSizeMatrix_Generator.py -f test/data/sparseMat_balanced.metrics -o out/mat.csv
+```
+
 ## Coordinates_Calculation
 Used to Generate `Coordinates Matrix`.
 
-```shell
+```
 usage: Coordinates_Calculation [-h] -f F -o O
 ExamPle: 
 
@@ -35,13 +52,13 @@ optional arguments:
 
 ExamPle: 
 ```shell
-python3 -u src/Coordinates_Calculation.py -f test/data/mat.csv -o out/Coord.csv
+python3 -u src/Coordinates_Calculation.py -f out/mat.csv -o out/Coord.csv
 ```
 
 ## Visualizer
 Used to Visualize `chromosomal Structure`.
 
-```shell
+```
 usage: Visualizer [-h] -f F -o O -t T [-s S]
 
 optional arguments:
