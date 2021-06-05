@@ -8,6 +8,12 @@ Implementation of the algorithm described in [3D genome reconstruction from chro
 # Preview
 ![](assets/preview.svg)
 > Data From `test/data/mat.csv`
+> 
+> With Difference Argument.
+> 1. -s 0.1 -m -b
+> 2. -s 0.1
+> 3. -s 1.0 -m -b
+> 4. -s 1.0
 # Usage
 ## Requirements
 1. python3
