@@ -2,7 +2,7 @@
 Author: George Zhao
 Date: 2021-06-04 12:42:40
 LastEditors: George Zhao
-LastEditTime: 2021-06-04 22:55:15
+LastEditTime: 2021-06-05 11:38:10
 Description: 
 Email: 2018221138@email.szu.edu.cn
 Company: SZU
@@ -108,7 +108,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(prog='Coordinates_Calculation')
     parser.add_argument('-f', type=str, required=True,
-                        help='Path to Balenced Full Matrix(CSV).')
+                        help='Path to Balenced Full Size Matrix(CSV).')
     parser.add_argument('-o', type=str, required=True,
                         help='Path to Output(CSV).')
     args = parser.parse_args()
