@@ -7,7 +7,7 @@ Implementation of the algorithm described in [3D genome reconstruction from chro
 
 # Preview
 ![](assets/preview.svg)
-> Data From `test/data/mat.csv`
+> Data From `test/data/sparseMat_balanced.metrics`
 > 
 > With Difference Argument.
 > 1. `-s 0.1 -m -b`
