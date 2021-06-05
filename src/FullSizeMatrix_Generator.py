@@ -34,7 +34,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(prog='FullSizeMatrix_Generator')
     parser.add_argument('-f', type=str, required=True,
-                        help='Path to Original Hi-C balanced Sparse Matrix File.')
+                        help='Path to Original Hi-C Normalized Sparse Matrix File.')
     parser.add_argument('-o', type=str, required=True,
                         help='Path to Output of Full Size Matrix(CSV).')
     args = parser.parse_args()

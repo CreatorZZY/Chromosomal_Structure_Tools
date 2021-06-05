@@ -7,7 +7,7 @@ Implementation of the algorithm described in [3D genome reconstruction from chro
 
 # Preview
 ![](assets/preview.svg)
-> Data From `test/data/sparseMat_balanced.metrics`
+> Data From `test/data/sparseMat_Normalized.metrics`
 > 
 > With Difference Argument.
 > 1. `-s 0.1 -m -b`
@@ -34,7 +34,7 @@ optional arguments:
 
 ExamPle: 
 ```shell
-python3 -u src/FullSizeMatrix_Generator.py -f test/data/sparseMat_balanced.metrics -o out/mat.csv
+python3 -u src/FullSizeMatrix_Generator.py -f test/data/sparseMat_Normalized.metrics -o out/mat.csv
 ```
 
 ## Coordinates_Calculation
