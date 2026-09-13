@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "chromosomal-structure-tools",
+  "compatibility_date": "2026-09-13",
+  // 纯静态站点：没有 Worker 脚本，直接托管 deno task build 产出的 dist/
+  // （wrangler 会把它作为 assets-only Worker 发布，免费额度内够用）
+  "assets": {
+    "directory": "./dist"
+  },
+  // 把部署信息打印出来，方便确认上传了哪些文件
+  "observability": {
+    "enabled": false
+  }
+}

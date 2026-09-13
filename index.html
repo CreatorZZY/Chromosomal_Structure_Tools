@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+          构建输入文件：tools/build.mjs 会把它原样拷进 dist/。
+          下面的相对路径按「同目录」写：dist/ 里需要有 app.js / worker.js / style.css。
+        -->
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>3D HiC Viewer</title>
+    <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+    <div class="app">
+        <aside class="panel">
+            <header class="brand">
+                <div class="brand-text">
+                    <h1>3D HiC Viewer</h1>
+                    <p>Hi-C → ShRec3D → 3D structure</p>
+                </div>
+                <button id="about-open" class="btn primary about-btn" type="button">About</button>
+            </header>
+
+            <section class="block">
+                <h2>
+                    Data
+                    <button id="format-help-open" class="help-btn" type="button" aria-label="Input format"
+                        title="Input format">?</button>
+                </h2>
+                <button id="dropzone" class="dropzone" type="button">
+                    <strong>Drop a file / click to choose</strong>
+                    <span>Sparse contacts: i&nbsp;&nbsp;j&nbsp;&nbsp;contact</span>
+                </button>
+                <input id="file-input" type="file" accept=".metrics,.tsv,.txt,.csv,.mat,.dat" hidden />
+                <button id="load-sample" class="btn wide" type="button">
+                    Load sample data (chromosome 1)
+                </button>
+
+                <dl class="stats">
+                    <div>
+                        <dt>File</dt>
+                        <dd id="stat-file">—</dd>
+                    </div>
+                    <div>
+                        <dt>Bins</dt>
+                        <dd id="stat-bins">—</dd>
+                    </div>
+                    <div>
+                        <dt>Contacts</dt>
+                        <dd id="stat-pairs">—</dd>
+                    </div>
+                    <div>
+                        <dt>Time</dt>
+                        <dd id="stat-time">—</dd>
+                    </div>
+                </dl>
+
+                <div class="progress">
+                    <div class="progress-bar" id="progress"></div>
+                </div>
+                <p class="status" id="status" data-tone="idle">Waiting for data…</p>
+            </section>
+
+            <section class="block">
+                <h2>Display</h2>
+                <label class="field">
+                    <span>Smoothing σ<output id="out-sigma">1.0</output></span>
+                    <input id="sigma" type="range" min="0.1" max="4" step="0.1" value="1" />
+                </label>
+                <label class="field">
+                    <span>Line width<output id="out-width">12px</output></span>
+                    <input id="width" type="range" min="1" max="36" step="1" value="12" />
+                </label>
+                <label class="field" id="marker-field">
+                    <span>Marker size<output id="out-marker">2px</output></span>
+                    <input id="marker-size" type="range" min="0" max="24" step="1" value="2" />
+                </label>
+                <div class="toggles">
+                    <label class="switch">
+                        <input id="opt-border" type="checkbox" checked /><span>Black outline</span>
+                    </label>
+                    <label class="switch">
+                        <input id="opt-markers" type="checkbox" /><span>Node markers</span>
+                    </label>
+                    <label class="switch">
+                        <input id="opt-dark" type="checkbox" /><span>Dark background</span>
+                    </label>
+                    <label class="switch">
+                        <input id="opt-rotate" type="checkbox" /><span>Auto-rotate</span>
+                    </label>
+                </div>
+                <button id="reset-view" class="btn wide" type="button">Reset view</button>
+            </section>
+
+            <section class="block">
+                <h2>Export</h2>
+                <div class="grid">
+                    <button id="export-png" class="btn" type="button" disabled>PNG image</button>
+                    <button id="export-svg" class="btn" type="button" disabled>SVG vector</button>
+                    <button id="export-webm" class="btn" type="button" disabled>Rotation video</button>
+                    <button id="export-coord" class="btn" type="button" disabled>Coordinates CSV</button>
+                    <button id="export-matrix" class="btn" type="button" disabled>Matrix CSV</button>
+                </div>
+            </section>
+
+            <footer class="foot">
+                Drag to rotate · Scroll to zoom · Right-drag to pan · <kbd>R</kbd> resets the view
+            </footer>
+        </aside>
+
+        <main class="stage">
+            <div id="viewport" class="viewport"></div>
+            <div class="badge" id="badge" hidden></div>
+            <button id="about-open-float" class="about-float" type="button" title="About this tool">
+                <span aria-hidden="true">i</span> About
+            </button>
+            <div class="empty" id="empty">
+                <strong>No data loaded</strong>
+                <span>Drop a contact matrix, or click "Load sample data"</span>
+            </div>
+        </main>
+    </div>
+
+    <dialog id="about" class="sheet" aria-labelledby="about-title">
+        <div class="sheet-bar">
+            <button id="about-close" class="btn" type="button">Close</button>
+        </div>
+
+        <div class="about-inner">
+            <p class="about-kicker">About</p>
+            <h2 id="about-title">3D HiC Viewer</h2>
+            <p class="about-lead">
+                A browser-based viewer for reconstructing and exploring the three-dimensional structure of
+                chromosomes from Hi-C contact matrices.
+            </p>
+            <p class="about-team">
+                Developed by <strong>Prof. Wang's team</strong> ·
+                <a href="https://lab.szu-bioinf.org/" target="_blank" rel="noreferrer noopener">
+                    lab.szu-bioinf.org
+                </a>
+            </p>
+
+            <h3>What it does</h3>
+            <ol class="about-steps">
+                <li>
+                    <b>Sparse contacts</b> — reads a normalized Hi-C matrix
+                    (<code>i&nbsp;&nbsp;j&nbsp;&nbsp;contact</code>), tab / comma / whitespace separated.
+                </li>
+                <li>
+                    <b>Full matrix</b> — a <code>log10(x+1)</code> transform and symmetrisation produce the
+                    complete <code>n×n</code> contact matrix.
+                </li>
+                <li>
+                    <b>Distances</b> — bins become graph nodes, contacts become edges weighted
+                    <code>1/contact</code>, and all-pairs shortest paths give the distance matrix.
+                </li>
+                <li>
+                    <b>3D coordinates</b> — classical multidimensional scaling returns an
+                    <code>n×3</code> point cloud.
+                </li>
+            </ol>
+            <p>
+                The result is rendered with three.js: a colour-coded chromatin chain you can rotate,
+                zoom and pan, with adjustable smoothing, line width and node markers. Export it as a
+                PNG, a vector SVG, a rotation video, or the raw coordinates and matrix as CSV.
+            </p>
+
+            <h3>Everything runs locally</h3>
+            <p>
+                There is no server-side computation: your contact matrix never leaves the browser. The
+                pipeline runs in a Web Worker, and the viewer uses the same dependency-free core module
+                as the bundled command-line tools.
+            </p>
+
+            <h3>Credits</h3>
+            <ul class="about-list">
+                <li>
+                    Algorithm — <i>ShRec3D</i>, from
+                    <a href="https://www.nature.com/articles/nmeth.3104" target="_blank" rel="noreferrer noopener">3D
+                        genome reconstruction from chromosomal contacts</a>
+                    (Nature Methods, 2014).
+                </li>
+                <li>
+                    Reference implementation —
+                    <a href="https://github.com/kpj/ShRec3D" target="_blank" rel="noreferrer noopener">
+                        kpj/ShRec3D
+                    </a>.
+                </li>
+            </ul>
+        </div>
+    </dialog>
+
+    <dialog id="format" class="sheet format-dialog" aria-labelledby="format-title">
+        <div class="sheet-bar">
+            <button id="format-help-close" class="btn" type="button">Close</button>
+        </div>
+
+        <div class="sheet-body">
+            <h2 id="format-title">Input format</h2>
+            <p>
+                The viewer reads a <b>sparse Hi-C contact matrix</b>: one contact per line, three columns.
+            </p>
+
+            <pre class="format-sample"><span class="cmt"># i    j      contact</span>
+0      0      7047.9995
+0      1000   3535.2393
+1000   1000   6878.4727
+0      2000   1.7134484
+1000   2000   3649.68</pre>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Column</th>
+                        <th>Meaning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>i</code></td>
+                        <td>Position of the first bin (bp).</td>
+                    </tr>
+                    <tr>
+                        <td><code>j</code></td>
+                        <td>Position of the second bin (bp). Same units as <code>i</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>contact</code></td>
+                        <td>
+                            Normalized contact value for that pair — how often the two loci were found close
+                            together. Non-negative; larger means closer.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Syntax rules</h3>
+            <ul class="format-list">
+                <li>
+                    <b>Separator</b> — tab, comma, semicolon or any run of whitespace, mixed freely. The
+                    sample files are tab-separated.
+                </li>
+                <li><b>Extra columns</b> are ignored; only the first three are read.</li>
+                <li><b>Blank lines</b> and lines starting with <code>#</code> are skipped.</li>
+                <li>
+                    <b>Either triangle is fine</b> — <code>(i,&nbsp;j)</code> and <code>(j,&nbsp;i)</code> are
+                    merged, duplicates are averaged, and the diagonal holds the self-contacts.
+                </li>
+                <li>
+                    <b>File types</b> — <code>.metrics</code>, <code>.tsv</code>, <code>.txt</code>,
+                    <code>.csv</code>, <code>.mat</code>, <code>.dat</code> all work; the picker just filters
+                    by extension, dropping a file always works.
+                </li>
+            </ul>
+
+            <h3>How it is used</h3>
+            <ul class="format-list">
+                <li>
+                    Contacts are transformed with <code>log10(x+1)</code> and completed into a full
+                    <code>n×n</code> symmetric matrix.
+                </li>
+                <li>
+                    A contact of <code>0</code> means “no evidence of contact” — the pair is left
+                    unconstrained rather than pulled together.
+                </li>
+                <li>
+                    The bin positions become the labels of the resulting matrix and the coordinates, so keep
+                    them in consistent units (the sample uses 1000&nbsp;bp bins: 0, 1000, 2000, …).
+                </li>
+            </ul>
+
+            <p class="format-note">
+                A line with fewer than three columns, or with a value that is not a number, stops the run
+                and reports the offending line number.
+            </p>
+        </div>
+    </dialog>
+
+    <script type="module" src="./app.js"></script>
+</body>
+
+</html>

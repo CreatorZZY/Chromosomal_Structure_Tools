@@ -1,5 +1,4 @@
-data
-out
-*.svg
-.vscode
-__pycache__
+/dist
+/out
+/.wrangler
+/.vscode

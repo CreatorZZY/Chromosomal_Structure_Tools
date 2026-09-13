@@ -1,0 +1,34 @@
+{
+  "nodeModulesDir": "none",
+  "tasks": {
+    "dev": "deno run --allow-read --allow-write --allow-run --allow-net tools/dev.mjs",
+    "build": "deno run --allow-read --allow-write --allow-run tools/build.mjs",
+    "preview": "deno run --allow-read --allow-net tools/serve.mjs",
+    "deploy": "bash scripts/deploy.sh",
+    "cf:dev": "npx wrangler dev",
+    "matrix": "deno run --allow-read --allow-write src/cli/fullsize-matrix.mjs",
+    "coords": "deno run --allow-read --allow-write src/cli/coordinates.mjs",
+    "test": "deno test --allow-read test/"
+  },
+  "fmt": {
+    "lineWidth": 100,
+    "exclude": [
+      "dist"
+    ]
+  },
+  "lint": {
+    "include": [
+      "src",
+      "test",
+      "tools"
+    ],
+    "exclude": [
+      "dist"
+    ],
+    "rules": {
+      "exclude": [
+        "no-import-prefix"
+      ]
+    }
+  }
+}
