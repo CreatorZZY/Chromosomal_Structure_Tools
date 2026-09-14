@@ -712,7 +712,6 @@ export class StructureViewer {
    */
   _addMarkers(positions, colors, lineWidth, borderColor) {
     const diameter = lineWidth + this.options.markerSize;
-    const pixelRatio = Math.min(globalThis.devicePixelRatio || 1, 2);
     const make = (color, size, renderOrder) => {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.BufferAttribute(Float32Array.from(positions), 3));
@@ -720,7 +719,10 @@ export class StructureViewer {
         geometry.setAttribute("color", new THREE.BufferAttribute(Float32Array.from(colors), 3));
       }
       const material = new THREE.PointsMaterial({
-        size: size * pixelRatio,
+        // PointsMaterial is converted to physical pixels by three.js' renderer.
+        // Keep this value in CSS pixels, just like LineMaterial#linewidth;
+        // multiplying by devicePixelRatio here makes high-DPI markers too large.
+        size,
         sizeAttenuation: false,
         map: this._dot,
         transparent: true,
