@@ -3,16 +3,13 @@
  *
  * 与旧版「伪 3D」SVG 的关键差别：
  *   · 真正的三维场景，带透视投影与 z-buffer 深度遮挡
- *   · 染色质链用 Line2（屏幕空间粗线）绘制，逐点彩虹着色
+ *   · 染色质链用「圆柱段 + 球形连接处」组成的 3D 胶囊链，逐段彩虹着色
  *   · 描边 / 节点标记分别用「下层放大一档的副本」实现，与原视觉一致
  *   · 相机固定在参考系里不动，拖动直接旋转模型：四元数累积，可以转过 360°
  *     以上也不会翻面；自转轴取屏幕竖直方向，永远落在视平面内
  *   · 可导出 PNG 截图与自转一周的 WebM 视频
  */
 import * as THREE from "npm:three@0.186.0";
-import { Line2 } from "npm:three@0.186.0/addons/lines/Line2.js";
-import { LineGeometry } from "npm:three@0.186.0/addons/lines/LineGeometry.js";
-import { LineMaterial } from "npm:three@0.186.0/addons/lines/LineMaterial.js";
 import { gaussianSmooth1d } from "./core.mjs";
 
 /** 画布背景色 */
@@ -59,6 +56,11 @@ const LABEL_FONT_FAMILY_SVG = "system-ui, -apple-system, 'Segoe UI', sans-serif"
 
 /** 复用的临时四元数，避免每帧分配 */
 const SCRATCH_QUATERNION = new THREE.Quaternion();
+/** 圆柱侧面的分段数；12 段已经能看出圆柱明暗，又不会给每个 bin 造成过多三角形 */
+const CAPSULE_RADIAL_SEGMENTS = 12;
+/** 球形节点的纵向分段数 */
+const CAPSULE_SPHERE_SEGMENTS = 8;
+const UNIT_Y = new THREE.Vector3(0, 1, 0);
 
 export class StructureViewer {
   /**
@@ -81,7 +83,7 @@ export class StructureViewer {
     this.count = 0;
     this._scale = 1;
     this._materials = [];
-    this._resolution = new THREE.Vector2(1, 1);
+    this._geometries = [];
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -92,6 +94,12 @@ export class StructureViewer {
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(BACKGROUND.light);
+
+    // 真实 3D 网格需要光照才能显出圆柱和球体的体积感。
+    const hemisphere = new THREE.HemisphereLight(0xffffff, 0x172033, 1.35);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    keyLight.position.set(3, 4, 5);
+    this.scene.add(hemisphere, keyLight);
 
     // 相机固定在参考系里：朝向与方向永不改变，只沿视线前后移动做缩放。
     this._direction = new THREE.Vector3(0.52, 0.38, 1).normalize();
@@ -112,7 +120,6 @@ export class StructureViewer {
     this.group = new THREE.Group();
     this.scene.add(this.group);
 
-    this._dot = makeDotTexture();
     this._recording = false;
     this._raf = 0;
     this._last = performance.now();
@@ -335,13 +342,11 @@ export class StructureViewer {
   /**
    * 导出当前视图为 SVG 矢量图。
    *
-   * three.js 自带的 SVGRenderer 只认 Mesh/Line/Points/Sprite 的基础材质，
-   * 读的是 geometry.attributes.position；而本项目的链是 Line2 —— 几何体由
-   * instanceStart / instanceEnd 实例化属性构成（position 只是那段 12 顶点的
-   * 基座模板），材质是 LineMaterial（ShaderMaterial），SVGRenderer 会直接跳过。
-   * 所以这里按同样的投影与取色规则自己生成矢量图：
+   * WebGL 端的链现在由实例化的圆柱和球体组成，带有真正的光照和三维遮挡；
+   * SVG 是平面矢量格式，不能直接复现 WebGL 的光照，因此这里按屏幕投影生成
+   * 一个轻量的二维矢量近似：
    *
-   *   · 链：逐段 <line>，颜色取自 jet 色带，按深度由远及近绘制（画家算法）
+   *   · 链：逐段带 round cap/join 的 <line>，颜色取自 jet 色带，按深度由远及近绘制
    *   · 描边：一条比链宽 2.5px 的黑色（深色背景下为浅色）路径垫在链下方
    *   · 节点标记：逐点 <circle>，直径为「线宽 + 标记尺寸」
    *   · 5' / 3'：<text>，位置与字号和屏幕上看到的一致
@@ -569,8 +574,6 @@ export class StructureViewer {
     this.renderer.setSize(width, height);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this._resolution.set(width, height);
-    for (const material of this._materials) material.resolution.set(width, height);
     this._updateLabels();
   }
 
@@ -629,6 +632,20 @@ export class StructureViewer {
     return Math.max(max, 0.2);
   }
 
+  /**
+   * 以「重置视角」为基准，计算一个屏幕像素对应的世界空间长度。
+   *
+   * 旧的 Line2 线宽是固定屏幕像素；改成真实网格后，粗细必须变成世界空间
+   * 半径，才能随着相机远近产生真实透视变化。这里让重置视角下的直径仍大致
+   * 等于界面滑块设置的像素值。
+   */
+  _worldPerPixelAtFit() {
+    const height = this.container.clientHeight || 1;
+    const halfFov = Math.tan((this.camera.fov * Math.PI) / 360);
+    const fitDistance = (this._radius() / Math.sin((this.camera.fov * Math.PI) / 360)) * FIT_MARGIN;
+    return (2 * fitDistance * halfFov) / height;
+  }
+
   _clear() {
     for (const child of [...this.group.children]) this.group.remove(child);
     for (const label of this._labels) {
@@ -637,22 +654,18 @@ export class StructureViewer {
       label.sprite.material.dispose();
     }
     this._labels = [];
-    this._geometry?.dispose();
+    for (const geometry of this._geometries) geometry.dispose();
+    this._geometries = [];
     for (const material of this._materials) material.dispose();
     this._materials = [];
-    this._geometry = null;
-    this._line = null;
-    this._border = null;
   }
 
   _material(options) {
-    const material = new LineMaterial({
-      vertexColors: false,
-      worldUnits: false,
-      resolution: this._resolution.clone(),
+    const material = new THREE.MeshStandardMaterial({
+      roughness: 0.72,
+      metalness: 0,
       ...options,
     });
-    material.resolution.copy(this._resolution);
     this._materials.push(material);
     return material;
   }
@@ -663,83 +676,168 @@ export class StructureViewer {
     if (n < 2) return;
 
     const dark = this.options.dark;
-    const lineWidth = this.options.lineWidth;
     const borderColor = dark ? BORDER_COLOR.dark : BORDER_COLOR.light;
 
     const curve = this._curve();
-    const positions = Float32Array.from(curve);
-    const colors = new Float32Array(n * 3);
+    const colors = new Array(n);
     for (let i = 0; i < n; i++) {
       const [r, g, b] = jetColor(1 - i / (n - 1), dark); // 与原实现一致：jet 反向
-      colors[i * 3] = r;
-      colors[i * 3 + 1] = g;
-      colors[i * 3 + 2] = b;
+      colors[i] = new THREE.Color().setRGB(r, g, b);
     }
 
-    const geometry = new LineGeometry();
-    geometry.setPositions(positions);
-    geometry.setColors(colors);
-    this._geometry = geometry;
-
-    if (this.options.border) {
-      this._border = new Line2(
-        geometry,
-        this._material({ color: borderColor, linewidth: lineWidth + BORDER_EXTRA_PIXELS }),
-      );
-      this._border.material.depthWrite = false;
-      this._border.renderOrder = 0;
-      this.group.add(this._border);
-    }
-
-    this._line = new Line2(
-      geometry,
-      this._material({ vertexColors: true, linewidth: lineWidth }),
+    // 所有 segment 共用同一个单位圆柱，长度和方向通过每个实例的矩阵设置。
+    // 圆柱的局部轴是 Y 轴，半径先设为 1，真正的半径在实例矩阵里缩放。
+    const cylinderGeometry = new THREE.CylinderGeometry(
+      1,
+      1,
+      1,
+      CAPSULE_RADIAL_SEGMENTS,
+      1,
+      false,
     );
-    this._line.renderOrder = 1;
-    this._line.frustumCulled = false;
-    this.group.add(this._line);
+    const sphereGeometry = new THREE.SphereGeometry(
+      1,
+      CAPSULE_RADIAL_SEGMENTS,
+      CAPSULE_SPHERE_SEGMENTS,
+    );
+    this._geometries.push(cylinderGeometry, sphereGeometry);
 
-    if (this.options.markers) this._addMarkers(positions, colors, lineWidth, borderColor);
+    const worldPerPixel = this._worldPerPixelAtFit();
+    const lineRadius = Math.max(1e-4, (this.options.lineWidth * worldPerPixel) / 2);
+    const borderExtra = (BORDER_EXTRA_PIXELS * worldPerPixel) / 2;
+    const nodeRadius = lineRadius +
+      (this.options.markers ? (this.options.markerSize * worldPerPixel) / 2 : 0);
+
+    // InstancedMesh 的 instanceColor 会自动启用实例颜色通道；这里不能再打开
+    // vertexColors，否则几何体没有逐顶点 color 属性时，shader 会把默认顶点色
+    // 当成黑色与 instanceColor 相乘，最终整条彩色链都会变黑。
+    const lineMaterial = this._material({ color: 0xffffff });
+    const borderMaterial = this.options.border ? this._material({ color: borderColor }) : null;
+
+    if (borderMaterial) {
+      // 描边是更大的同形网格，先画但不写深度；随后由彩色网格写入正确深度并盖住中间。
+      borderMaterial.depthWrite = false;
+      this._addCylinders(
+        curve,
+        n,
+        cylinderGeometry,
+        borderMaterial,
+        lineRadius + borderExtra,
+        0,
+      );
+      this._addSpheres(
+        curve,
+        n,
+        sphereGeometry,
+        borderMaterial,
+        nodeRadius + borderExtra,
+        0.25,
+      );
+    }
+
+    this._addCylinders(
+      curve,
+      n,
+      cylinderGeometry,
+      lineMaterial,
+      lineRadius,
+      1,
+      colors,
+    );
+    this._addSpheres(curve, n, sphereGeometry, lineMaterial, nodeRadius, 1.25, colors);
     this._addLabels(curve, n);
   }
 
   /**
-   * 节点标记：直径 = 线宽 + markerSize（0 时与线同宽），外面再垫一圈描边色。
-   * @param {Float32Array} positions
-   * @param {Float32Array} colors
-   * @param {number} lineWidth 当前线宽（像素）
-   * @param {number} borderColor 外圈颜色（随背景反转）
+   * 创建一批真正的 3D 圆柱段。
+   *
+   * 每个 bin 间的相邻坐标是一段圆柱；圆柱两端会被下面的球形节点覆盖，
+   * 所以外轮廓看起来是半球封口的胶囊，而不是带平面端盖的裸圆柱。
+   * @param {Float64Array} curve
+   * @param {number} n
+   * @param {THREE.BufferGeometry} geometry
+   * @param {THREE.Material} material
+   * @param {number} radius 世界空间半径
+   * @param {number} renderOrder
+   * @param {THREE.Color[]} [colors]
    */
-  _addMarkers(positions, colors, lineWidth, borderColor) {
-    const diameter = lineWidth + this.options.markerSize;
-    const make = (color, size, renderOrder) => {
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute("position", new THREE.BufferAttribute(Float32Array.from(positions), 3));
-      if (color === null) {
-        geometry.setAttribute("color", new THREE.BufferAttribute(Float32Array.from(colors), 3));
-      }
-      const material = new THREE.PointsMaterial({
-        // PointsMaterial is converted to physical pixels by three.js' renderer.
-        // Keep this value in CSS pixels, just like LineMaterial#linewidth;
-        // multiplying by devicePixelRatio here makes high-DPI markers too large.
-        size,
-        sizeAttenuation: false,
-        map: this._dot,
-        transparent: true,
-        alphaTest: 0.5,
-        depthWrite: false,
-        vertexColors: color === null,
-        color: color === null ? 0xffffff : color,
-      });
-      const points = new THREE.Points(geometry, material);
-      points.renderOrder = renderOrder;
-      points.frustumCulled = false;
-      this.group.add(points);
-      return points;
-    };
+  _addCylinders(curve, n, geometry, material, radius, renderOrder, colors = null) {
+    const mesh = new THREE.InstancedMesh(geometry, material, n - 1);
+    mesh.renderOrder = renderOrder;
+    mesh.frustumCulled = false;
 
-    if (this.options.border) make(borderColor, diameter + BORDER_EXTRA_PIXELS, 2);
-    make(null, diameter, 3);
+    const midpoint = new THREE.Vector3();
+    const direction = new THREE.Vector3();
+    const quaternion = new THREE.Quaternion();
+    const scale = new THREE.Vector3();
+    const matrix = new THREE.Matrix4();
+    const color = new THREE.Color();
+
+    for (let i = 0; i < n - 1; i++) {
+      const a = new THREE.Vector3(curve[i * 3], curve[i * 3 + 1], curve[i * 3 + 2]);
+      const b = new THREE.Vector3(
+        curve[(i + 1) * 3],
+        curve[(i + 1) * 3 + 1],
+        curve[(i + 1) * 3 + 2],
+      );
+      direction.subVectors(b, a);
+      const length = Math.max(direction.length(), 1e-5);
+      direction.normalize();
+      midpoint.addVectors(a, b).multiplyScalar(0.5);
+      quaternion.setFromUnitVectors(UNIT_Y, direction);
+      scale.set(radius, length, radius);
+      matrix.compose(midpoint, quaternion, scale);
+      mesh.setMatrixAt(i, matrix);
+
+      if (colors) {
+        color.copy(colors[i]).lerp(colors[i + 1], 0.5);
+        mesh.setColorAt(i, color);
+      }
+    }
+
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    this.group.add(mesh);
+    return mesh;
+  }
+
+  /**
+   * 创建真正的 3D 球形连接点。
+   *
+   * markerSize 为 0 时，球与主线等粗，只负责把圆柱端盖成圆头；打开节点标记
+   * 后，球会额外变大，并继续使用对应 bin 的颜色。
+   * @param {Float64Array} curve
+   * @param {number} n
+   * @param {THREE.BufferGeometry} geometry
+   * @param {THREE.Material} material
+   * @param {number} radius 世界空间半径
+   * @param {number} renderOrder
+   * @param {THREE.Color[]} [colors]
+   */
+  _addSpheres(curve, n, geometry, material, radius, renderOrder, colors = null) {
+    const mesh = new THREE.InstancedMesh(geometry, material, n);
+    mesh.renderOrder = renderOrder;
+    mesh.frustumCulled = false;
+
+    const identity = new THREE.Quaternion();
+    const scale = new THREE.Vector3(radius, radius, radius);
+    const matrix = new THREE.Matrix4();
+    const position = new THREE.Vector3();
+    const color = new THREE.Color();
+
+    for (let i = 0; i < n; i++) {
+      position.set(curve[i * 3], curve[i * 3 + 1], curve[i * 3 + 2]);
+      matrix.compose(position, identity, scale);
+      mesh.setMatrixAt(i, matrix);
+      if (colors) {
+        mesh.setColorAt(i, color.copy(colors[i]));
+      }
+    }
+
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    this.group.add(mesh);
+    return mesh;
   }
 
   /**
@@ -898,21 +996,6 @@ export class StructureViewer {
 }
 
 /* ------------------------------------------------------------ 工具 */
-
-/** 圆形点贴图（节点标记用） */
-function makeDotTexture(size = 64) {
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffffff";
-  ctx.fill();
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-}
 
 /**
  * 文字精灵（5' / 3' 标注，始终朝向相机且不被遮挡）。

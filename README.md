@@ -48,7 +48,6 @@ you can also drop your own `.metrics` / `.tsv` / `.txt` file onto the left panel
 
   ```js
   import * as THREE from "npm:three@0.186.0";
-  import { Line2 } from "npm:three@0.186.0/addons/lines/Line2.js";
   ```
 
 - `deno.json` sets `"nodeModulesDir": "none"`, so npm packages are resolved from Deno's global cache
@@ -171,10 +170,10 @@ ends in the same pose and loops seamlessly.
 | Option          | Description                                                                                                       |
 | --------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Smoothing σ     | Gaussian smoothing along the chain (`0.1`–`4`, default `1`, same edge handling as the original)                   |
-| Line width      | Chain thickness in pixels: `1`–`36`, default `12`                                                                 |
-| Marker size     | Node sphere diameter _in addition to_ the line width at reset view: `0`–`24`, default `2`; perspective scales it with depth |
-| Black outline   | Draws a 2.5px-thicker stroke underneath the chain (becomes light on a dark background)                            |
-| Node markers    | A dot per bin — **off by default** (the size slider is dimmed while it is off)                                    |
+| Line width      | 3D capsule diameter at reset view: `1`–`36` px, default `12`; it scales naturally with perspective when zooming |
+| Marker size     | 3D node-sphere diameter _in addition to_ the capsule diameter at reset view: `0`–`24` px, default `2`          |
+| Black outline   | Draws a larger 3D capsule/sphere layer underneath the coloured geometry (becomes light on a dark background)   |
+| Node markers    | Makes the 3D sphere at each bin larger than the chain — **off by default** (the size slider is dimmed while it is off) |
 | Dark background | Switches the background and every foreground colour (outline, markers, labels, colour ramp)                       |
 | Auto-rotate     | Continuous spin around the screen-vertical axis                                                                   |
 
@@ -203,20 +202,15 @@ button and a click on the backdrop all dismiss it. The panel is also reachable d
 
 ### SVG export
 
-three.js does ship an `SVGRenderer`, but it cannot draw this scene: it only handles
-`MeshBasicMaterial` / `LineBasicMaterial` / `PointsMaterial` / `SpriteMaterial` and reads
-`geometry.attributes.position`. The chain here is a `Line2` — its geometry is built from the
-instanced `instanceStart` / `instanceEnd` attributes (the `position` attribute is just the 12-vertex
-base template), and its material is a `LineMaterial` (a `ShaderMaterial`) — so `SVGRenderer` skips
-it and you would get an empty SVG.
+The WebGL view uses lit 3D capsule meshes (cylinder segments plus spherical joints), but SVG is a
+flat vector format and cannot directly reproduce the WebGL lighting. `StructureViewer.toSvg()`
+therefore generates a lightweight projected vector approximation using the same camera, geometry
+projection and colour pipeline:
 
-`StructureViewer.toSvg()` therefore generates the vector output directly, using the same projection
-and colour pipeline as the WebGL view:
-
-- the chain becomes one `<line>` per segment, coloured from the `jet` ramp, drawn back-to-front
+- the chain becomes one rounded `<line>` per segment, coloured from the `jet` ramp, drawn back-to-front
   (painter's algorithm) to mimic the z-buffer occlusion;
 - the outline is a single thicker `<path>` laid underneath;
-- node markers become perspective-scaled `<circle>`s matching the 3D sphere projection;
+- node markers become projected `<circle>`s;
 - `5'` / `3'` become `<text>`, at the same place and size as on screen.
 
 Colours go through the same sRGB → linear → sRGB brightening chain as the WebGL view, so the
@@ -332,7 +326,7 @@ matrix and the smoothing results agree with the reference implementation to mach
 │   ├── core.mjs                # ★ Core algorithm (dependency-free, shared by browser and CLI)
 │   ├── worker.mjs              # Web Worker: runs core.mjs off the main thread, with progress
 │   ├── main.js                 # Page controller: file input → compute → render → export
-│   ├── viewer.js               # three.js viewer: Line2 chain, model rotation, video, SVG export
+│   ├── viewer.js               # three.js viewer: 3D capsule chain, model rotation, video, SVG export
 │   ├── style.css               # UI styling
 │   └── cli/
 │       ├── fullsize-matrix.mjs # CLI 1: sparse contacts → full matrix
