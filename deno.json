@@ -4,8 +4,10 @@
     "dev": "deno run --allow-read --allow-write --allow-run --allow-net tools/dev.mjs",
     "build": "deno run --allow-read --allow-write --allow-run tools/build.mjs",
     "preview": "deno run --allow-read --allow-net tools/serve.mjs",
-    "deploy": "bash scripts/deploy.sh",
-    "cf:dev": "npx wrangler dev",
+    "cf:deploy": "deno --allow-env --allow-run npm:wrangler deploy",
+    "cf:dev": "deno npm:wrangler dev",
+    "cf:start": "deno npm:wrangler dev",
+    "cf:typegen": "deno npm:wrangler types",
     "matrix": "deno run --allow-read --allow-write src/cli/fullsize-matrix.mjs",
     "coords": "deno run --allow-read --allow-write src/cli/coordinates.mjs",
     "test": "deno test --allow-read test/"

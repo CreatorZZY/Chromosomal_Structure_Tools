@@ -172,7 +172,7 @@ ends in the same pose and loops seamlessly.
 | --------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Smoothing σ     | Gaussian smoothing along the chain (`0.1`–`4`, default `1`, same edge handling as the original)                   |
 | Line width      | Chain thickness in pixels: `1`–`36`, default `12`                                                                 |
-| Marker size     | Node dot diameter _in addition to_ the line width: `0`–`24`, default `2`; `0` means “exactly as wide as the line” |
+| Marker size     | Node sphere diameter _in addition to_ the line width at reset view: `0`–`24`, default `2`; perspective scales it with depth |
 | Black outline   | Draws a 2.5px-thicker stroke underneath the chain (becomes light on a dark background)                            |
 | Node markers    | A dot per bin — **off by default** (the size slider is dimmed while it is off)                                    |
 | Dark background | Switches the background and every foreground colour (outline, markers, labels, colour ramp)                       |
@@ -216,7 +216,7 @@ and colour pipeline as the WebGL view:
 - the chain becomes one `<line>` per segment, coloured from the `jet` ramp, drawn back-to-front
   (painter's algorithm) to mimic the z-buffer occlusion;
 - the outline is a single thicker `<path>` laid underneath;
-- node markers become `<circle>`s sized from the line width plus the marker size;
+- node markers become perspective-scaled `<circle>`s matching the 3D sphere projection;
 - `5'` / `3'` become `<text>`, at the same place and size as on screen.
 
 Colours go through the same sRGB → linear → sRGB brightening chain as the WebGL view, so the
