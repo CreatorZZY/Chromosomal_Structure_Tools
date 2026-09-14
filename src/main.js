@@ -208,6 +208,7 @@ const els = {
   progress: $("progress"),
   status: $("status"),
   colorLegend: $("color-legend"),
+  legendEndpoints: [...document.querySelectorAll(".legend-endpoint")],
   badge: $("badge"),
   empty: $("empty"),
   sigma: $("sigma"),
@@ -664,6 +665,29 @@ els.labels.addEventListener("change", () => {
   const showLabels = els.labels.checked;
   applyDisplayOptions({ showLabels });
 });
+for (const endpoint of els.legendEndpoints) {
+  let hovering = false;
+  let focused = false;
+  const updateFocus = () => {
+    viewer.setEndpointFocus(hovering || focused ? endpoint.dataset.endpoint : null);
+  };
+  endpoint.addEventListener("pointerenter", () => {
+    hovering = true;
+    updateFocus();
+  });
+  endpoint.addEventListener("pointerleave", () => {
+    hovering = false;
+    updateFocus();
+  });
+  endpoint.addEventListener("focus", () => {
+    focused = true;
+    updateFocus();
+  });
+  endpoint.addEventListener("blur", () => {
+    focused = false;
+    updateFocus();
+  });
+}
 els.resetView.addEventListener("click", () => viewer.resetView());
 
 globalThis.addEventListener("keydown", (event) => {

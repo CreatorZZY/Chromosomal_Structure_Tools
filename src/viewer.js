@@ -56,10 +56,10 @@ const LABEL_FONT_FAMILY_SVG = "system-ui, -apple-system, 'Segoe UI', sans-serif"
 
 /** 复用的临时四元数，避免每帧分配 */
 const SCRATCH_QUATERNION = new THREE.Quaternion();
-/** 圆柱侧面的分段数；12 段已经能看出圆柱明暗，又不会给每个 bin 造成过多三角形 */
-const CAPSULE_RADIAL_SEGMENTS = 12;
-/** 球形节点的纵向分段数 */
-const CAPSULE_SPHERE_SEGMENTS = 8;
+/** 圆柱侧面的分段数；提高轮廓采样，减少粗线和黑色描边的几何锯齿 */
+const CAPSULE_RADIAL_SEGMENTS = 24;
+/** 球形节点的纵向分段数；与侧面分段配合，让球面轮廓更圆滑 */
+const CAPSULE_SPHERE_SEGMENTS = 16;
 const UNIT_Y = new THREE.Vector3(0, 1, 0);
 
 export class StructureViewer {
@@ -88,6 +88,9 @@ export class StructureViewer {
     this._scale = 1;
     this._materials = [];
     this._geometries = [];
+    this._focusMaterials = [];
+    this._endpointMaterials = [];
+    this._endpointFocus = null;
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -330,6 +333,22 @@ export class StructureViewer {
       );
     }
     if (needsRebuild && this.raw) this._build();
+  }
+
+  /**
+   * 聚焦某个末端：保留对应的 5' / 3' 节点为不透明，其余节点和所有链段
+   * 降到 50% 透明度。传入 null 恢复正常显示。
+   * @param {"5"|"3"|null} endpoint
+   */
+  setEndpointFocus(endpoint) {
+    const index = endpoint === "5"
+      ? (this.count > 0 ? 0 : null)
+      : endpoint === "3"
+      ? (this.count > 0 ? this.count - 1 : null)
+      : null;
+    if (index === this._endpointFocus) return;
+    this._endpointFocus = index;
+    this._updateEndpointFocus();
   }
 
   /** 重置模型姿态与相机距离，回到能完整容纳当前结构的视角 */
@@ -676,6 +695,29 @@ export class StructureViewer {
     this._geometries = [];
     for (const material of this._materials) material.dispose();
     this._materials = [];
+    this._focusMaterials = [];
+    this._endpointMaterials = [];
+  }
+
+  /** 根据当前末端聚焦状态更新普通链段/节点材质的透明度。 */
+  _updateEndpointFocus() {
+    const dimmed = this._endpointFocus !== null;
+    for (const entry of this._focusMaterials) {
+      const { material, depthWrite } = entry;
+      material.transparent = dimmed;
+      material.opacity = dimmed ? 0.1 : 1;
+      material.depthWrite = dimmed ? false : depthWrite;
+      material.needsUpdate = true;
+    }
+
+    for (const entry of this._endpointMaterials) {
+      const highlighted = this._endpointFocus === entry.index;
+      const faded = dimmed && !highlighted;
+      entry.material.transparent = faded;
+      entry.material.opacity = faded ? 0.1 : 1;
+      entry.material.depthWrite = faded ? false : entry.depthWrite;
+      entry.material.needsUpdate = true;
+    }
   }
 
   /**
@@ -743,10 +785,20 @@ export class StructureViewer {
     // 当成黑色与 instanceColor 相乘，最终整条彩色链都会变黑。
     const lineMaterial = this._material({ color: 0xffffff });
     const borderMaterial = this.options.border ? this._material({ color: borderColor }) : null;
+    const internalIndices = Array.from(
+      { length: Math.max(0, n - 2) },
+      (_, index) => index + 1,
+    );
+
+    this._focusMaterials = [{ material: lineMaterial, depthWrite: lineMaterial.depthWrite }];
 
     if (borderMaterial) {
       // 描边是更大的同形网格，先画但不写深度；随后由彩色网格写入正确深度并盖住中间。
       borderMaterial.depthWrite = false;
+      this._focusMaterials.push({
+        material: borderMaterial,
+        depthWrite: borderMaterial.depthWrite,
+      });
       this._addCylinders(
         curve,
         n,
@@ -755,11 +807,31 @@ export class StructureViewer {
         lineRadius + borderExtra,
         0,
       );
-      this._addSpheres(
+      if (internalIndices.length > 0) {
+        this._addSpheres(
+          curve,
+          n,
+          sphereGeometry,
+          borderMaterial,
+          nodeRadius + borderExtra,
+          0.25,
+          null,
+          internalIndices,
+        );
+      }
+      this._addEndpointSphere(
         curve,
-        n,
+        0,
         sphereGeometry,
-        borderMaterial,
+        this._endpointMaterial({ color: borderColor }, 0, false),
+        nodeRadius + borderExtra,
+        0.25,
+      );
+      this._addEndpointSphere(
+        curve,
+        n - 1,
+        sphereGeometry,
+        this._endpointMaterial({ color: borderColor }, n - 1, false),
         nodeRadius + borderExtra,
         0.25,
       );
@@ -774,8 +846,36 @@ export class StructureViewer {
       1,
       colors,
     );
-    this._addSpheres(curve, n, sphereGeometry, lineMaterial, nodeRadius, 1.25, colors);
+    if (internalIndices.length > 0) {
+      this._addSpheres(
+        curve,
+        n,
+        sphereGeometry,
+        lineMaterial,
+        nodeRadius,
+        1.25,
+        colors,
+        internalIndices,
+      );
+    }
+    this._addEndpointSphere(
+      curve,
+      0,
+      sphereGeometry,
+      this._endpointMaterial({ color: colors[0] }, 0),
+      nodeRadius,
+      1.25,
+    );
+    this._addEndpointSphere(
+      curve,
+      n - 1,
+      sphereGeometry,
+      this._endpointMaterial({ color: colors[n - 1] }, n - 1),
+      nodeRadius,
+      1.25,
+    );
     if (this.options.showLabels) this._addLabels(curve, n);
+    this._updateEndpointFocus();
   }
 
   /**
@@ -843,9 +943,11 @@ export class StructureViewer {
    * @param {number} radius 世界空间半径
    * @param {number} renderOrder
    * @param {THREE.Color[]} [colors]
+   * @param {number[]} [indices] 原始节点索引；省略时绘制全部节点
    */
-  _addSpheres(curve, n, geometry, material, radius, renderOrder, colors = null) {
-    const mesh = new THREE.InstancedMesh(geometry, material, n);
+  _addSpheres(curve, n, geometry, material, radius, renderOrder, colors = null, indices = null) {
+    const nodeIndices = indices ?? Array.from({ length: n }, (_, index) => index);
+    const mesh = new THREE.InstancedMesh(geometry, material, nodeIndices.length);
     mesh.renderOrder = renderOrder;
     mesh.frustumCulled = false;
 
@@ -855,17 +957,37 @@ export class StructureViewer {
     const position = new THREE.Vector3();
     const color = new THREE.Color();
 
-    for (let i = 0; i < n; i++) {
+    for (let instance = 0; instance < nodeIndices.length; instance++) {
+      const i = nodeIndices[instance];
       position.set(curve[i * 3], curve[i * 3 + 1], curve[i * 3 + 2]);
       matrix.compose(position, identity, scale);
-      mesh.setMatrixAt(i, matrix);
+      mesh.setMatrixAt(instance, matrix);
       if (colors) {
-        mesh.setColorAt(i, color.copy(colors[i]));
+        mesh.setColorAt(instance, color.copy(colors[i]));
       }
     }
 
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    this.group.add(mesh);
+    return mesh;
+  }
+
+  /** 创建一个末端专用材质，以便聚焦时单独控制该末端的透明度。 */
+  _endpointMaterial(options, index, depthWrite = true) {
+    const material = this._material(options);
+    material.depthWrite = depthWrite;
+    this._endpointMaterials.push({ material, index, depthWrite });
+    return material;
+  }
+
+  /** 创建一个独立的末端球，使两个末端可以分别控制透明度。 */
+  _addEndpointSphere(curve, index, geometry, material, radius, renderOrder) {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(curve[index * 3], curve[index * 3 + 1], curve[index * 3 + 2]);
+    mesh.scale.setScalar(radius);
+    mesh.renderOrder = renderOrder;
+    mesh.frustumCulled = false;
     this.group.add(mesh);
     return mesh;
   }

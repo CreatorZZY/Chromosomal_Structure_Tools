@@ -209,7 +209,8 @@ https://example.com/?sigma=2&lineWidth=4&markerSize=0&border=false&markers=true&
 The `5'` / `3'` labels sit along **the ray of the last chain segment** at each end: their position
 is recomputed every frame from the screen projection, so however you rotate or zoom, the text stays
 right next to the end point, outside the chromosome, and its font size stays proportional to the
-line width.
+line width. Hovering `5′` or `3′` in the colour legend keeps that terminal node at full opacity and
+fades the other nodes and chain segments to 10% opacity; moving away restores the original colours.
 
 ### About
 

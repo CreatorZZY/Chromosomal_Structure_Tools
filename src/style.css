@@ -289,7 +289,6 @@ body {
 
 .legend-bar {
   height: 8px;
-  border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
   border-radius: 999px;
   background: linear-gradient(
     90deg,
@@ -309,6 +308,21 @@ body {
   color: var(--muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 10.5px;
+}
+
+.legend-endpoint {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.legend-endpoint:hover,
+.legend-endpoint:focus-visible {
+  color: var(--text);
 }
 
 /* ------------------------------------------------------------- 控件 */
