@@ -169,13 +169,32 @@ ends in the same pose and loops seamlessly.
 
 | Option          | Description                                                                                                       |
 | --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Smoothing σ     | Gaussian smoothing along the chain (`0.1`–`4`, default `1`, same edge handling as the original)                   |
+| Smoothing σ     | Gaussian smoothing along the chain (`0`–`4`, default `1`; `0` keeps the raw coordinates)                  |
 | Line width      | 3D capsule diameter at reset view: `1`–`36` px, default `12`; it scales naturally with perspective when zooming |
 | Marker size     | 3D node-sphere diameter _in addition to_ the capsule diameter at reset view: `0`–`24` px, default `2`          |
 | Black outline   | Draws a larger 3D capsule/sphere layer underneath the coloured geometry (becomes light on a dark background)   |
 | Node markers    | Makes the 3D sphere at each bin larger than the chain — **off by default** (the size slider is dimmed while it is off) |
 | Dark background | Switches the background and every foreground colour (outline, markers, labels, colour ramp)                       |
 | Auto-rotate     | Continuous spin around the screen-vertical axis                                                                   |
+| Advanced light  | Display switch, enabled by default; off is equivalent to `?advanceLight=false` and uses flat base colours |
+| 5' / 3' labels  | Shows or hides the direction labels at the two ends of the chromosome; off by default                  |
+
+The Display section has five built-in presets: **Raw**, **Raw-marker**, **Smooth**, **Flat** and
+**Smooth-marker**. **Flat** uses the Smooth settings with Advanced light disabled; all five keep
+5' / 3' labels off. The Custom tab exposes every Display control. **Save custom** stores the full
+configuration in the browser's `localStorage`, adds it to the preset list, and returns to Presets;
+the saved Custom card remains available after a refresh.
+
+All Display settings are restored from the URL when the page loads. With the default view the URL
+stays clean; after the first Display control change, all settings are written as query parameters,
+including unchanged defaults, so the link is self-contained. The supported parameter names are
+`sigma`, `lineWidth`, `markerSize`, `border`, `markers`, `dark`, `autoRotate`, `advanceLight` and
+`showLabels`.
+For example:
+
+```text
+https://example.com/?sigma=2&lineWidth=4&markerSize=0&border=false&markers=true&dark=true&autoRotate=true&advanceLight=false&showLabels=false
+```
 
 **Export**
 

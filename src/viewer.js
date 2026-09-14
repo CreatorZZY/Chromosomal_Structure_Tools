@@ -21,8 +21,8 @@ const BORDER_COLOR = { light: 0x000000, dark: 0xe8edf6 };
 
 /** 线宽的取值范围（像素）：默认 12px，与原实现的基准一致 */
 export const LINE_WIDTH = { min: 1, max: 36, step: 1, value: 12 };
-/** 平滑 σ 的默认值与滑块范围 */
-export const SIGMA = { min: 0.1, max: 4, step: 0.1, value: 1 };
+/** 平滑 σ 的默认值与滑块范围；0 表示完全不平滑 */
+export const SIGMA = { min: 0, max: 4, step: 0.1, value: 1 };
 /**
  * 节点标记尺寸（像素）：在链宽之外多加这么多，0 表示与线一样宽。
  * 即标记直径 = 线宽 + 该值。
@@ -65,8 +65,10 @@ const UNIT_Y = new THREE.Vector3(0, 1, 0);
 export class StructureViewer {
   /**
    * @param {HTMLElement} container 承载画布的容器
+   * @param {{advanceLight?: boolean, showLabels?: boolean}} [config]
+   *   是否启用高级光照与 5'/3' 标注
    */
-  constructor(container) {
+  constructor(container, config = {}) {
     this.container = container;
     this.options = {
       sigma: SIGMA.value, // 平滑 σ，默认 1
@@ -76,6 +78,8 @@ export class StructureViewer {
       markers: false, // 节点标记默认关闭
       dark: false, // 浅色背景
       autoRotate: false,
+      advanceLight: config.advanceLight ?? true,
+      showLabels: config.showLabels ?? false,
     };
 
     this.raw = null;
@@ -96,10 +100,10 @@ export class StructureViewer {
     this.scene.background = new THREE.Color(BACKGROUND.light);
 
     // 真实 3D 网格需要光照才能显出圆柱和球体的体积感。
-    const hemisphere = new THREE.HemisphereLight(0xffffff, 0x172033, 1.35);
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
-    keyLight.position.set(3, 4, 5);
-    this.scene.add(hemisphere, keyLight);
+    this._hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x172033, 1.35);
+    this._keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    this._keyLight.position.set(3, 4, 5);
+    this._setAdvancedLight(this.options.advanceLight);
 
     // 相机固定在参考系里：朝向与方向永不改变，只沿视线前后移动做缩放。
     this._direction = new THREE.Vector3(0.52, 0.38, 1).normalize();
@@ -296,15 +300,29 @@ export class StructureViewer {
   /**
    * 更新显示选项。
    * @param {Partial<{sigma: number, lineWidth: number, markerSize: number, border: boolean,
-   *   markers: boolean, dark: boolean, autoRotate: boolean}>} patch
+   *   markers: boolean, dark: boolean, autoRotate: boolean, advanceLight: boolean,
+   *   showLabels: boolean}>} patch
    */
   setOptions(patch) {
     // 深色背景同时影响描边、节点外圈与 5'/3' 标注的取色，因此也要重建
-    const rebuildKeys = ["sigma", "lineWidth", "markerSize", "border", "markers", "dark"];
+    const rebuildKeys = [
+      "sigma",
+      "lineWidth",
+      "markerSize",
+      "border",
+      "markers",
+      "dark",
+      "advanceLight",
+      "showLabels",
+    ];
     const needsRebuild = rebuildKeys.some(
       (key) => key in patch && patch[key] !== this.options[key],
     );
+    const lightingChanged = "advanceLight" in patch &&
+      patch.advanceLight !== this.options.advanceLight;
     Object.assign(this.options, patch);
+
+    if (lightingChanged) this._setAdvancedLight(this.options.advanceLight);
 
     if ("dark" in patch) {
       this.scene.background = new THREE.Color(
@@ -660,12 +678,24 @@ export class StructureViewer {
     this._materials = [];
   }
 
+  /**
+   * 开关两盏高级光源。关闭时改用 MeshBasicMaterial，保证没有光源时模型仍然
+   * 显示基础颜色，而不是像 MeshStandardMaterial 那样因没有入射光而变黑。
+   * @param {boolean} enabled
+   */
+  _setAdvancedLight(enabled) {
+    this.scene.remove(this._hemisphereLight, this._keyLight);
+    if (enabled) this.scene.add(this._hemisphereLight, this._keyLight);
+  }
+
   _material(options) {
-    const material = new THREE.MeshStandardMaterial({
-      roughness: 0.72,
-      metalness: 0,
-      ...options,
-    });
+    const material = this.options.advanceLight
+      ? new THREE.MeshStandardMaterial({
+        roughness: 0.72,
+        metalness: 0,
+        ...options,
+      })
+      : new THREE.MeshBasicMaterial(options);
     this._materials.push(material);
     return material;
   }
@@ -745,7 +775,7 @@ export class StructureViewer {
       colors,
     );
     this._addSpheres(curve, n, sphereGeometry, lineMaterial, nodeRadius, 1.25, colors);
-    this._addLabels(curve, n);
+    if (this.options.showLabels) this._addLabels(curve, n);
   }
 
   /**

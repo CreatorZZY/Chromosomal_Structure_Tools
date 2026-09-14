@@ -61,37 +61,88 @@
                     <div class="progress-bar" id="progress"></div>
                 </div>
                 <p class="status" id="status" data-tone="idle">Waiting for data…</p>
+                <div class="color-legend" id="color-legend" hidden>
+                    <div class="legend-title">Chromosome direction</div>
+                    <div class="legend-bar" role="img" aria-label="Colour gradient from 5 prime to 3 prime"></div>
+                    <div class="legend-labels"><span>5′</span><span>3′</span></div>
+                </div>
             </section>
 
-            <section class="block">
-                <h2>Display</h2>
-                <label class="field">
-                    <span>Smoothing σ<output id="out-sigma">1.0</output></span>
-                    <input id="sigma" type="range" min="0.1" max="4" step="0.1" value="1" />
-                </label>
-                <label class="field">
-                    <span>Line width<output id="out-width">12px</output></span>
-                    <input id="width" type="range" min="1" max="36" step="1" value="12" />
-                </label>
-                <label class="field" id="marker-field">
-                    <span>Marker size<output id="out-marker">2px</output></span>
-                    <input id="marker-size" type="range" min="0" max="24" step="1" value="2" />
-                </label>
-                <div class="toggles">
-                    <label class="switch">
-                        <input id="opt-border" type="checkbox" checked /><span>Black outline</span>
-                    </label>
-                    <label class="switch">
-                        <input id="opt-markers" type="checkbox" /><span>Node markers</span>
-                    </label>
-                    <label class="switch">
-                        <input id="opt-dark" type="checkbox" /><span>Dark background</span>
-                    </label>
-                    <label class="switch">
-                        <input id="opt-rotate" type="checkbox" /><span>Auto-rotate</span>
-                    </label>
-                </div>
+            <div class="view-actions">
                 <button id="reset-view" class="btn wide" type="button">Reset view</button>
+            </div>
+            <hr class="display-divider" />
+
+            <section class="block display-block">
+                <div class="display-header">
+                    <h2>Display</h2>
+                    <div class="display-mode" role="tablist" aria-label="Display mode">
+                        <button id="display-presets" class="mode-tab is-active" type="button" role="tab"
+                            aria-selected="true" aria-controls="preset-panel">Presets</button>
+                        <button id="display-custom" class="mode-tab" type="button" role="tab"
+                            aria-selected="false" aria-controls="custom-panel">Custom</button>
+                    </div>
+                </div>
+
+                <div id="preset-panel" class="preset-panel" role="tabpanel" aria-labelledby="display-presets">
+                    <div class="preset-list">
+                        <button class="preset-option" type="button" data-preset="raw">
+                            <span class="preset-copy"><strong>Raw</strong><small>σ 0 · markers off</small></span>
+                        </button>
+                        <button class="preset-option" type="button" data-preset="raw-marker">
+                            <span class="preset-copy"><strong>Raw-marker</strong><small>σ 0 · markers on</small></span>
+                        </button>
+                        <button class="preset-option" type="button" data-preset="smooth">
+                            <span class="preset-copy"><strong>Smooth</strong><small>σ 1 · markers off</small></span>
+                        </button>
+                        <button class="preset-option" type="button" data-preset="flat">
+                            <span class="preset-copy"><strong>Flat</strong><small>σ 1 · flat light</small></span>
+                        </button>
+                        <button class="preset-option" type="button" data-preset="smooth-marker">
+                            <span class="preset-copy"><strong>Smooth-marker</strong><small>σ 1 · markers on</small></span>
+                        </button>
+                        <button id="preset-custom" class="preset-option" type="button" data-preset="custom" hidden>
+                            <span class="preset-copy"><strong>Custom</strong><small id="custom-preset-summary">Saved locally</small></span>
+                        </button>
+                    </div>
+                    <p class="preset-note" id="preset-note">Choose a display preset for the chromosome.</p>
+                </div>
+
+                <div id="custom-panel" class="custom-panel" role="tabpanel" aria-labelledby="display-custom" hidden>
+                    <label class="field">
+                        <span>Smoothing σ<output id="out-sigma">1.0</output></span>
+                        <input id="sigma" type="range" min="0" max="4" step="0.1" value="1" />
+                    </label>
+                    <label class="field">
+                        <span>Line width<output id="out-width">12px</output></span>
+                        <input id="width" type="range" min="1" max="36" step="1" value="12" />
+                    </label>
+                    <label class="field" id="marker-field">
+                        <span>Marker size<output id="out-marker">2px</output></span>
+                        <input id="marker-size" type="range" min="0" max="24" step="1" value="2" />
+                    </label>
+                    <div class="toggles">
+                        <label class="switch">
+                            <input id="opt-border" type="checkbox" checked /><span>Black outline</span>
+                        </label>
+                        <label class="switch">
+                            <input id="opt-markers" type="checkbox" /><span>Node markers</span>
+                        </label>
+                        <label class="switch">
+                            <input id="opt-dark" type="checkbox" /><span>Dark background</span>
+                        </label>
+                        <label class="switch">
+                            <input id="opt-rotate" type="checkbox" /><span>Auto-rotate</span>
+                        </label>
+                        <label class="switch">
+                            <input id="opt-advance-light" type="checkbox" checked /><span>Advanced light</span>
+                        </label>
+                        <label class="switch">
+                            <input id="opt-labels" type="checkbox" /><span>5′ / 3′ labels</span>
+                        </label>
+                    </div>
+                    <button id="save-custom" class="btn wide" type="button">Save custom</button>
+                </div>
             </section>
 
             <section class="block">
