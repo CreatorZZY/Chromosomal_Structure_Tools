@@ -20,7 +20,11 @@
                     <h1>3D HiC Viewer</h1>
                     <p>Hi-C → ShRec3D → 3D structure</p>
                 </div>
-                <button id="about-open" class="btn primary about-btn" type="button">About</button>
+                <div class="brand-actions">
+                    <button id="tour-open" class="btn tour-btn" type="button" aria-label="Start guided tour"
+                        title="Start guided tour">Tour</button>
+                    <button id="about-open" class="btn primary about-btn" type="button">About</button>
+                </div>
             </header>
 
             <section class="block">
@@ -150,7 +154,7 @@
                 </div>
             </section>
 
-            <section class="block">
+            <section id="export-block" class="block">
                 <h2>Export</h2>
                 <div class="grid">
                     <button id="export-png" class="btn" type="button" disabled>PNG image</button>

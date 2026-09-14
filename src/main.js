@@ -3,6 +3,9 @@
  */
 import sampleText from "../test/data/sparseMat_Normalized.metrics" with { type: "text" };
 import { LINE_WIDTH, MARKER_SIZE, SIGMA, StructureViewer } from "./viewer.js";
+import TourGuidePackage from "npm:@sjmc11/tourguidejs@0.0.26";
+
+const { TourGuideClient } = TourGuidePackage;
 
 const $ = (id) => document.getElementById(id);
 
@@ -240,6 +243,7 @@ const els = {
   exportCoord: $("export-coord"),
   exportMatrix: $("export-matrix"),
   about: $("about"),
+  tourOpen: $("tour-open"),
   aboutOpen: $("about-open"),
   aboutOpenFloat: $("about-open-float"),
   aboutClose: $("about-close"),
@@ -302,6 +306,7 @@ const state = {
 };
 
 let requestId = 0;
+let tourPreviewLegend = false;
 
 /* ------------------------------------------------------------- 计算 */
 
@@ -358,6 +363,7 @@ worker.addEventListener("message", (event) => {
   setBusy(false);
   setStatus(`Done: ${size} bins in ${elapsed.toFixed(0)} ms`, "ok");
   els.colorLegend.hidden = false;
+  tourPreviewLegend = false;
 
   els.statBins.textContent = String(size);
   els.statPairs.textContent = pairs.toLocaleString("en-US");
@@ -813,6 +819,105 @@ els.exportMatrix.addEventListener("click", () => {
   download(new Blob([state.matrixCsv], { type: "text/csv" }), `${state.name}_matrix.csv`);
   setStatus("Full matrix CSV exported", "ok");
 });
+
+/* ---------------------------------------------------------- 引导 tour */
+
+// 数据尚未加载时 legend 会隐藏；进入对应步骤时临时展示一份图例预览，避免引导指向空白位置。
+
+function showTourLegendPreview() {
+  if (tourPreviewLegend || !els.colorLegend.hidden) return;
+  els.colorLegend.hidden = false;
+  tourPreviewLegend = true;
+}
+
+function restoreTourLegendPreview() {
+  if (!tourPreviewLegend) return;
+  els.colorLegend.hidden = true;
+  tourPreviewLegend = false;
+}
+
+const tour = new TourGuideClient({
+  steps: [
+    {
+      order: 1,
+      title: "About",
+      target: "#about-open",
+      content:
+        "<p>Open <strong>About</strong> to read what this viewer does, how the Hi-C data becomes a 3D chromosome, and where the project comes from.</p>",
+    },
+    {
+      order: 2,
+      title: "Load data",
+      target: "#dropzone",
+      content:
+        "<p>Drop a sparse contact file here, or click this area to choose one. You can also use <strong>Load sample data</strong> below it to try chromosome 1 immediately.</p>",
+    },
+    {
+      order: 3,
+      title: "Input format",
+      target: "#format-help-open",
+      content:
+        "<p>The <strong>?</strong> button explains the accepted <code>i&nbsp;&nbsp;j&nbsp;&nbsp;contact</code> columns, separators, comments, and example rows.</p>",
+    },
+    {
+      order: 4,
+      title: "Chromosome direction",
+      target: ".legend-bar",
+      beforeEnter: showTourLegendPreview,
+      afterLeave: restoreTourLegendPreview,
+      content:
+        "<p>This colour bar follows the chromosome from <strong>5′</strong> to <strong>3′</strong>. Hover either endpoint label to keep that end bright and fade the rest of the structure.</p>",
+    },
+    {
+      order: 5,
+      title: "Reset view",
+      target: "#reset-view",
+      content:
+        "<p><strong>Reset view</strong> restores the model's starting rotation, zoom, and pan when you want to get back to a clear overview.</p>",
+    },
+    {
+      order: 6,
+      title: "Presets",
+      target: "#preset-panel",
+      beforeEnter: () => setDisplayMode("presets"),
+      content:
+        "<p><strong>Presets</strong> are quick display modes such as Raw, Smooth, Flat, and marker variants. Use <strong>Custom</strong> when you want to tune the sliders and switches yourself.</p>",
+    },
+    {
+      order: 7,
+      title: "Export",
+      target: "#export-block",
+      content:
+        "<p>When data is ready, export a PNG, SVG, rotation video, coordinates CSV, or full matrix CSV from this section.</p>",
+    },
+  ],
+  dialogClass: "cst-tour-dialog",
+  dialogZ: 10000,
+  backdropColor: "rgba(13, 16, 21, 0.78)",
+  targetPadding: 10,
+  dialogMaxWidth: 360,
+  nextLabel: "Next",
+  prevLabel: "Back",
+  finishLabel: "Done",
+  progressBar: "#5aa9ff",
+  completeOnFinish: false,
+  rememberStep: false,
+  debug: false,
+  autoScroll: true,
+  autoScrollSmooth: true,
+  activeStepInteraction: true,
+});
+
+tour.onBeforeExit(restoreTourLegendPreview);
+
+function startTour() {
+  tour.start().catch((error) => {
+    console.warn("Could not start the guided tour", error);
+  });
+}
+
+els.tourOpen.addEventListener("click", startTour);
+globalThis.cstTour = tour;
 
 /* ------------------------------------------------------------- 启动 */
 

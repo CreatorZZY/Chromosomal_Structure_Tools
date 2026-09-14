@@ -57,6 +57,13 @@ body {
   gap: 10px;
 }
 
+.brand-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
 .brand-text {
   min-width: 0;
 }
@@ -75,6 +82,18 @@ body {
   border-radius: 999px;
   font-size: 12px;
   letter-spacing: 0.02em;
+}
+
+.tour-btn {
+  padding: 6px 11px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.tour-btn:hover:not(:disabled) {
+  color: var(--text);
 }
 
 /* Data 标题旁的输入格式说明入口：黄色加粗问号 */
@@ -1033,6 +1052,260 @@ kbd {
   margin-bottom: 8px;
 }
 
+/* --------------------------------------------------------- TourGuideJS */
+
+[data-tg-tour] {
+  scroll-margin: 30px 0;
+}
+
+.tg-backdrop {
+  position: absolute;
+  display: none;
+  z-index: 9997;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 65%, transparent);
+  border-radius: 9px;
+  box-shadow: rgb(13 16 21 / 0.78) 0 0 1px 2px, rgb(13 16 21 / 0.78) 0 0 0 1000vh;
+}
+
+.tg-backdrop.tg-backdrop-animate {
+  transition: all 280ms ease;
+}
+
+.tg-backdrop.allow-interaction {
+  pointer-events: none;
+}
+
+.tg-dialog {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  width: min(360px, calc(100vw - 28px));
+  max-width: min(360px, calc(100vw - 28px));
+  min-height: 120px;
+  z-index: 9999;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 22px 60px rgb(0 0 0 / 0.52);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow: hidden;
+}
+
+.tg-dialog.animate-position {
+  transition: all 280ms ease;
+}
+
+.tg-dialog .tg-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 17px 18px 0;
+}
+
+.tg-dialog .tg-dialog-header .tg-dialog-title {
+  margin-right: auto;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.tg-dialog .tg-dialog-header .tg-dialog-close-btn {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 0;
+  border-radius: 5px;
+  color: var(--muted);
+  opacity: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tg-dialog .tg-dialog-header .tg-dialog-close-btn:hover,
+.tg-dialog .tg-dialog-header .tg-dialog-close-btn:focus-visible {
+  background: var(--panel-2);
+  color: var(--text);
+  opacity: 1;
+}
+
+.tg-dialog .tg-dialog-header .tg-dialog-close-btn svg {
+  width: 11px;
+  height: 11px;
+  fill: currentColor;
+}
+
+.tg-dialog .tg-dialog-header .tg-dialog-spinner {
+  display: none;
+}
+
+.tg-dialog .tg-dialog-progress-bar {
+  height: 3px;
+  margin-top: 14px;
+  background: var(--line);
+}
+
+.tg-dialog .tg-dialog-progress-bar > .tg-bar {
+  min-width: 4px;
+  height: 100%;
+  background: var(--accent) !important;
+  transition: width 280ms ease;
+}
+
+.tg-dialog .tg-dialog-body {
+  padding: 14px 18px 16px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.tg-dialog .tg-dialog-body p {
+  margin: 0;
+}
+
+.tg-dialog .tg-dialog-body strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.tg-dialog .tg-dialog-body code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+}
+
+.tg-dialog .tg-dialog-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 0 18px 2px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.tg-dialog .tg-dialog-dots > span.tg-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 3px;
+  border-radius: 50%;
+  background: #4b566b;
+}
+
+.tg-dialog .tg-dialog-dots > span.tg-dot.tg-dot-active {
+  background: var(--accent);
+}
+
+.tg-dialog .tg-dialog-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px 16px;
+}
+
+.tg-dialog .tg-dialog-footer button.tg-dialog-btn {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.tg-dialog .tg-dialog-footer button.tg-dialog-btn + button {
+  margin-left: auto;
+}
+
+.tg-dialog .tg-dialog-footer button.tg-dialog-btn:hover:not(:disabled),
+.tg-dialog .tg-dialog-footer button.tg-dialog-btn:focus-visible {
+  border-color: var(--accent-dim);
+  color: var(--text);
+  outline: none;
+}
+
+.tg-dialog .tg-dialog-footer button.tg-dialog-btn:active:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-dim) 28%, var(--panel-2));
+}
+
+.tg-dialog .tg-dialog-footer button.tg-dialog-btn:disabled,
+.tg-dialog .tg-dialog-footer button.tg-dialog-btn.disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.tg-dialog .tg-dialog-footer .tg-dialog-footer-sup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto;
+  padding: 0 4px;
+  text-align: center;
+  line-height: 1;
+}
+
+.tg-dialog .tg-dialog-footer .tg-dialog-footer-sup .tg-step-progress {
+  display: inline-block;
+  margin: 0;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+}
+
+.tg-dialog .tg-dialog-footer .tg-dialog-footer-sup .tg-dialog-dots {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tg-dialog .tg-dialog-footer .tg-dialog-footer-sup .tg-dialog-dots > span.tg-dot {
+  width: 6px;
+  height: 6px;
+  margin: 0 2px;
+}
+
+.tg-dialog .tg-arrow {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--panel);
+  box-shadow: -1px -1px 0 var(--line);
+  transform: rotate(45deg);
+}
+
+.tg-dialog.tg-dialog-fixed {
+  transition: none;
+}
+
+.tg-no-interaction * {
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.tg-no-interaction .tg-dialog,
+.tg-no-interaction .tg-active-element,
+.tg-dialog *,
+.tg-active-element * {
+  pointer-events: auto !important;
+  user-select: text !important;
+}
+
 @media (max-width: 860px) {
   .app {
     grid-template-columns: 1fr;
@@ -1047,6 +1320,18 @@ kbd {
 }
 
 @media (max-width: 420px) {
+  .brand-actions {
+    gap: 4px;
+  }
+
+  .tour-btn {
+    padding-inline: 9px;
+  }
+
+  .about-btn {
+    padding-inline: 11px;
+  }
+
   .display-header {
     align-items: stretch;
     flex-direction: column;

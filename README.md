@@ -15,6 +15,8 @@ produced by Deno's own `deno bundle`.
   (Nature Methods, 2014)
 - Reference implementation: [kpj/ShRec3D](https://github.com/kpj/ShRec3D)
 
+![demo](assets/longshot20260914215058.webp)
+
 ---
 
 ## Quick start
