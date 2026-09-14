@@ -886,7 +886,7 @@ const tour = new TourGuideClient({
     {
       order: 7,
       title: "Export",
-      target: "#export-block",
+      target: "#export-actions",
       content:
         "<p>When data is ready, export a PNG, SVG, rotation video, coordinates CSV, or full matrix CSV from this section.</p>",
     },
@@ -904,7 +904,8 @@ const tour = new TourGuideClient({
   rememberStep: false,
   debug: false,
   autoScroll: true,
-  autoScrollSmooth: true,
+  autoScrollSmooth: false,
+  autoScrollOffset: 70,
   activeStepInteraction: true,
 });
 
